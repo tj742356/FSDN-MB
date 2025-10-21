@@ -62,84 +62,50 @@ FSDN-MB的设计旨在通过精确的图像分割辅助医生进行息肉的检�
 #### Architecture
 
 <p align="center">
-    <img src="https://github.com/haoshao-nku/medical_seg/blob/master/fig/pipline_polyper.png"/> <br />
+    <img src="fig/SAEM.png"/> <br />
     <em> 
-    Figure 1: Overall architecture of Polyper. We use the Swin-T from Swin Transformer as the encoder. The decoder is divided into two main stages. The first potential boundary extraction (PBE) stage aims to capture multi-scale features from the encoder, which are then aggregated to generate the initial segmentation results. Next, we extract the predicted polyps' potential boundary and interior regions using morphology operators. In the second boundary sensitive refinement (BSR) stage, we model the relationships between the potential boundary and interior regions to generate better segmentation results.
-    </em>
-</p>
-
-
-<p align="center">
-    <img src="https://github.com/haoshao-nku/medical_seg/blob/master/fig/refine_polyper.png"/> <br />
-    <em> 
-    Figure 2: Detailed structure of boundary sensitive attention (BSA) module. This process is separated into two parallel branches, which systematically capitalize on the distinctive attributes of polyps at various growth stages, both in terms of spatial and channel characteristics. `B' and `M' indicate the number of pixels in the boundary and interior polyp regions within an input of size H*W and C channels.
+    Figure 1:本文提出的FSDN-MB网络是一个基于频域和空间域的双分支网络，随后经过多级多尺度跨域融合模块（MMCFM）,最后经过三个decoder实现息肉的完整分割。
     </em>
 </p>
 
 #### Experiments
 
-> For training, testing and other details can be found at **/medical_seg/mmsegmentation/local_config/Polyper-AAAI2024/readme.md**.
-
-### [MCANet: Medical Image Segmentation with Multi-Scale Cross-Axis Attention](https://arxiv.org/abs/2312.08866)
-
-> **Authors:**
-> [Hao Shao](https://scholar.google.com/citations?hl=en&user=vB4DPYgAAAAJ), [Quansheng Zeng](), [Qibin Hou](https://scholar.google.com/citations?user=fF8OFV8AAAAJ&hl=en&oi=ao), &[Jufeng Yang](https://scholar.google.com/citations?user=c5vDJv0AAAAJ&hl=en&oi=ao).
-
-#### **Abstract**
+更改数据集路径
+1.下载 Polypseg 数据集，然后解压缩数据集。
+2.更新项目中 /FSDN-MB/mmsegmentation/local_config/base/datasets/polypseg.py 的训练路径和测试路径，分别位于第 55、56、67 和 68 行。
+建议在更新数据集路径时使用绝对路径而不是相对路径。ISIC2018、DSB2018也以上述方式更改。
 
 
-Efficiently capturing multi-scale information and building long-range dependencies among pixels are essential for medical image segmentation because of the various sizes and shapes of the lesion regions or organs. In this paper, we present Multi-scale Cross-axis Attention (MCA) to solve the above challenging issues based on the efficient axial attention. Instead of simply connecting axial attention along the horizontal and vertical directions sequentially, we propose to calculate dual cross attentions between two parallel axial attentions to capture global information better. To process the significant variations of lesion regions or organs in individual sizes and shapes, we also use multiple convolutions of strip-shape kernels with different kernel sizes in each axial attention path to improve the efficiency of the proposed MCA in encoding spatial information. We build the proposed MCA upon the MSCAN backbone, yielding our network, termed MCANet. Our MCANet with only 4M+ parameters performs even better than most previous works with heavy backbones (e.g., Swin Transformer) on four challenging tasks, including skin lesion segmentation, nuclei segmentation, abdominal multi-organ segmentation, and polyp segmentation.
+训练
+请确认您当前是否在 mmsegmentation 目录下。如果没有，请进入mmsegmentation目录。然后在终端中运行以下代码：
 
-#### Architecture
+python tools/train.py /FSDN-MB/mmsegmentation/local_config/polyp/main/polyp_mscsn_t_polypseg_512*512_80k.py
+python tools/train.py /FSDN-MB/mmsegmentation/local_config/polyp/main/polyp_mscan_t_synapse_512*512_50k.py
+......
+训练时，每8000次迭代进行一次验证，同时保存检查点文件。批量大小和验证集评估指标可以在相应的配置文件中更改。
 
+测试
+您可以在 /FSDN-MB/mmsegmentation/work_dirs 文件夹中找到与配置文件同名的目录。下面存储的是使用当前配置进行测试时生成的日志、检查点和其他文件。
 
+测试模型的命令如下：
 
-<p align="center">
-    <img src="https://github.com/haoshao-nku/medical_seg/blob/master/fig/pipeline-MCANet.png"/> <br />
-    <em> 
-    Figure 1: Overall architecture of the proposed MCANet. We take the MSCAN network proposed in SegNeXt as our encoder because of its capability of capturing multi-scale features. The feature maps from the last three stages of the encoder are combined via upsampling and then concatenated as the input of the decoder. Our decoder is based on multi-scale cross-axis attention, which takes advantage of both multi-scale convolutional features and the axial attention.
-    </em>
-</p>
+python tools/test.py /FSDN-MB/mmsegmentation/local_config/polyp/main/polypt_mscsn_t_polypseg_512512_80k.py /FSDN-MB/mmsegmentation/work_dirs/polyp_mscsn_t_polypseg_512512_80k/iter_80000.pth --eval mIoU
+您可以替换 iter_80000.pth 来评估不同检查点的性能。同样，您可以替换 mIoU，并使用不同的评估指标来评估模型。
 
+mmsegmentation 支持的评估指标可以在 /FSDN-MB/mmsegmentation/mmseg/evaluation/metrics 中找到。
 
+计算翻牌和参数
+请运行以下命令：
 
-<p align="center">
-    <img src="https://github.com/haoshao-nku/medical_seg/blob/master/fig/decoder-MCANet.png"/> <br />
-    <em> 
-    Figure 2: Detailed structure of the proposed multi-scale cross-axis attention decoder. Our decoder contains two parallel paths, each of which contains multi-scale 1D convolutions and cross-axis attention to aggregate the spatial information. Note that we do not add any activation functions in decoder.
-    </em>
-</p>
-
-
-#### Experiments
-
-> For training, testing and other details can be found at **/medical_seg/mmsegmentation/local_config/MCANet/readme.md**.
+python /FSDN-MB/mmsegmentation/local_config/polyp/main/MCANet_mscsn_t_polypseg_512*512_80k.py --形状 512 512
+您可以通过将“512 512”替换为您想要的图像尺寸来计算它。 您可以替换配置文件来评估不同网络的 flops 和参数。
 
 
 ## Acknowlegement
 
 Thanks [mmsegmentation](https://github.com/open-mmlab/mmsegmentation) providing a friendly codebase for segmentation tasks. And our code is built based on it.
 
-## Reference
-You may want to cite:
-```
-@inproceedings{shao2024polyper,
-  title={Polyper: Boundary Sensitive Polyp Segmentation},
-  author={Shao, Hao and Zhang, Yang and Hou, Qibin},
-  booktitle={Proceedings of the AAAI Conference on Artificial Intelligence},
-  volume={38},
-  number={5},
-  pages={4731--4739},
-  year={2024}
-}
 
-@article{shao2023mcanet,
-  title={MCANet: Medical Image Segmentation with Multi-Scale Cross-Axis Attention},
-  author={Shao, Hao and Zeng, Quansheng and Hou, Qibin and Yang, Jufeng},
-  journal={arXiv preprint arXiv:2312.08866},
-  year={2023}
-}
-```
 
 
 
