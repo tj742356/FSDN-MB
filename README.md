@@ -62,7 +62,7 @@ FSDN-MB的设计旨在通过精确的图像分割辅助医生进行息肉的检�
 #### Architecture
 
 <p align="center">
-    <img src="fig/SAEM.png"/> <br />
+    <img src="fig/模型.png"/> <br />
     <em> 
     Figure 1:本文提出的FSDN-MB网络是一个基于频域和空间域的双分支网络，随后经过多级多尺度跨域融合模块（MMCFM）,最后经过三个decoder实现息肉的完整分割。
     </em>
